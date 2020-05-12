@@ -1,0 +1,203 @@
+---
+title: "Homework 4"
+author: "Rifaa Qadri"
+date: "4/10/2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-packages, include=FALSE}
+library(dplyr)
+library(knitr)
+library(ggplot2)
+```
+## R Markdown
+
+Part 1: Compare to known click rate
+
+(a)- 
+Deriving Expectancy: 
+$E [\overline{x}] = E [\frac{1}{n} \sum_{i = 1}^{n} x_{i}] = \frac{1}{n} \sum_{i = 1}^{n} E [x_{i}] = \frac{1}{n}(n p_{A}) =  p_{A}$
+
+Deriving Variance:
+$var[\overline{X}] = var[\frac{1}{n} \sum_{i = 1}^{n} x_{i}] =\frac{1}{n} \sum_{i = 1}^{n} var [x_{i}] = \frac{1}{n} (p(1-p))$
+
+```{r cars}
+variance <- function(p,n){
+  var <- (1/n) * (p*(1-p))
+  return(var)
+}
+```
+
+
+(b)-computing values for $E [\overline{x}]$ and $var[\overline{X}]$ based on pA = 0.5 and n = 50.
+```{r pressure, echo=FALSE}
+pA <- 0.5
+n <- 50
+variance(pA,n)
+
+```
+Thus, $var[\overline{X}]=0.005$ and $E [\overline{x}] = 0.5$
+
+(c)-
+```{r third}
+pB <- 0.6
+1- pnorm(pB, mean = 0.5,sd=sqrt(0.005))
+```
+
+(d)- Should you reject the null hypothesis pB ≤ pA? Why? you want to test the
+(null) hypothesis pB ≤ pA = 0.5 and reject it if P(X > pˆB) ≤ α under this hypothesis.
+-> From 1c, we get 0.0786496 which is greater than 0.005. Therefore we do not reject the null hypothesis pB > 0.05
+
+(e)- 
+```{r fourth}
+pB <- 0.6
+n <- 100 
+sec <- variance(pB,n)
+1- pnorm(pB, mean = 0.5, sd=sqrt(sec))
+```
+If we observe the same pB= 0.6 but with n=100, we get 0.02061342 as seen above. We reject the null hypothesis in this case because it is greater than our threshold of 0.05.
+
+(f)- What is the smallest value pˆB you would reject the null hypothesis with n = 100
+```{r fifth}
+pB <- 0.5
+n <- 100
+ourv <- variance(pB, n)
+qb <- 0.5 + qnorm(0.95, sd=sqrt(ourv))
+qb
+```
+(g)- smallest detectable improvement in the experiment with n=50: qb-pA.
+```{r six}
+pB <- 0.5
+n <- 50
+secc <- variance(pB, n)
+qb <- 0.5 + qnorm(0.95, sd=sqrt(secc))
+qb-0.5
+
+```
+
+Part 2: Compare to known click rate 
+pA is 0.75. We want to test the hypothesis pB ≤ 0.75 and reject it if P(X > pˆB) < 0.05 under this hypothesis
+(a)-  
+```{r sev}
+pA <- 0.75 
+n <- 50
+res2 <- variance(pA, n)
+res2
+```
+Thus, $var[\overline{X}]=0.00375$ and $E [\overline{x}] = 0.75$
+
+(b)
+```{r eighth}
+pB <- 0.6
+1-pnorm(pB, mean=0.75, sd=sqrt(res2))
+```
+(c) Should you reject the null hypothesis pB ≤ 0.75? Why?
+-> We don't reject the null hypothesis pB ≤ 0.75 because as we see above, the result, 0.9928471 is higher than 0.05
+
+
+(d) What if you had observed the same pˆB = 0.6 but with n = 100 samples. Should you reject the null
+hypothesis in this case? Why?
+
+```{r bob}
+pA <- 0.6
+n <- 100
+res2v <- variance(pA,n)
+1 - pnorm(pA,mean = 0.75,sd =sqrt(res2v))
+
+```
+We do not reject the null hypothesis in this case as we see that our result from using 100 samples is 0.9989002 which is greater than 0.75.
+
+(e) What is the smallest value pˆB you should reject the null hypothesis with n = 100
+```{r bob2}
+pA <- 0.75
+n <- 100
+res3v <- variance(pA, n)
+qb <- pA + qnorm(0.95, sd = sqrt(res3v))
+qb
+```
+(f) What is the smallest detectable improvement in your experiment (n = 50)
+```{r bob3}
+pB <- 0.75
+n <- 50
+hic <- variance(pB, n)
+qb <- 0.75 + qnorm(.95,sd=sqrt(hic))
+qb-0.75
+
+```
+
+Part 3: Consider your answers for parts (1g) and (2f ). Is the smallest detectable improvement in Question (1g)
+larger or smaller than in Question (2f )?
+From (1g), we got the smallest detectable improvement to be 0.1163087
+From (2f), we got this result to be 0.1007263
+Thus, the smallest detectable improvement from question 1 is larger than than question 2's where we see that 0.1163087 > 0.1007263. We see this results from having a larger standard deviation and variance in question 1.
+
+This makes sense mathematically because the variance is larger in part 1, so the spread is greater. Due to this, detectable improvement increases. pA is 0.5, which meants its a 50-50 percent change that it is there at the 50% mark and there is more spread out data. With pB being 0.75 causes the variance to have a smaller detectable improvement. 
+
+
+Part 4: Comparing to estimated click rate pA.
+
+(a) Expectancy Derivation: 
+$Y = [\bar{X}_B - \bar{X}_A]$
+$\mathbb{E}[\bar{Y}] =0$
+
+Variance Derivation: 
+
+$var[Y] = var[\bar X_b - \bar X_a] = var[\bar X_b] - var[\bar X_a] = \frac{(p_{b} \times (1 - p_{b}))} {n_b} + \frac{(p_{a} \times (1 - p_{a}))} {n_a} = (p - p^2)(\frac{1}{n_B} + \frac{1}{n_A})$
+
+```{r alice}
+exp_variance <- function(p,n){
+ varr <- ((p - p*p))*(1/(nB+nA))
+}
+```
+
+(b)
+From observation pA = pB = p. Based on this, our estimate for pA = pB = p is the numbers of clicks divided by the numbers shown: (35+35)/(55+45) = 70/100 = 0.7
+
+(c) Compute a value for var[\overline{Y}]. we want pb > pa. so pb-pa=0.
+We compute this by 
+```{r fefe}
+nB <- 45
+nA <- 55
+p <- 0.7
+expec <- 0
+varr <- ((p - p*p))*(1/nB + 1/nA)
+varr
+```
+
+(d) What is your estimate y of pB − pA
+```{r alice3}
+avpa <- 35/55
+avpb <- 35/45
+est <- avpb - avpa
+est
+```
+(e)
+```{r alice6}
+y <- 1 - pnorm(est, mean=0, sd=sqrt(varr))
+y
+```
+
+(f)
+We see from (4e), our result is 0.06236482 which is greater than α= 0.05. Therefore, we cannot reject the null hypothesis.
+
+
+Bonus: Smallest detectable improvement for estimated click rates- 
+```{r alice8}
+pvals <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
+n=100
+df <- data_frame(pvals)
+df <- df %>%
+  mutate(smallestdiff = qnorm(0.95,est,sqrt((1/n)*2*(pvals-pvals*pvals))))
+ggplot(df,mapping=aes(x=pvals,y=smallestdiff)) + 
+  geom_line(lm = smooth)
+```
+
+
+
