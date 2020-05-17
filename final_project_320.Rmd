@@ -1,0 +1,421 @@
+---
+title: "Predicting Hit Songs of 2020"
+author: "Rifaa Qadri & Paulina Hong"
+date: "5/13/2020"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+In this project, we will walk you through the entire data science pipeline process. This includes tasks such as importing required libraries, collecting the data, cleaning it up, making graphs to represent this data. We will discover the needed predictors to find the top songs for 2020. 
+
+As you probably know, everyone has been stuck at home during quarantine. Whether they are studying, playing in their yard, or doing work, they are most likely listening to some music throughout their day. Upon interviewing many of our peers, we were informed that their music taste has expanded and they have been listening to a variety of music genres.' They mentioned the "30 days song challenge" on social media where people post one of their songs depending on the theme of the day (such as "a classic favorite" "what song motivates you" or "a song that reminds you of someone"), which have influenced people to discover their friends' music taste and expand their own playlists. 
+
+Therefore, we have decided to work on a dataset that has the top 2000 songs on Spotify but just focusing on the years 2010-2019. We want to study which attributes would be good predictors for the top songs for 2020. 
+
+Some attributes we can think can contribute to this is the genre, the danceability, the loudness and speechness.
+
+The data used in this project can be accessed through [here](https://www.kaggle.com/iamsumat/spotify-top-2000s-mega-dataset)
+
+
+## Imports
+
+We will use the following libraries throughout our project: 
+```{r reqlibaries, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(scales)
+```
+
+## Loading Data
+
+```{r loading_data, message=FALSE, warning=FALSE}
+data <- read.csv(file="~/Downloads/Spotify-2000.csv",header = TRUE, sep = ",")
+as_tibble(data)
+```
+
+Looking at the data set, we see that everything looks okay with no NA or any non-understandable variables. We don't have any missing data in our dataset, but we still have to tidy it so the attribute names are easier to read and only use the information that would be helpful in our prediction.
+
+Some insight about this dataset:
+
+- **Beats per minute:** The tempo of the song
+- **Energy:** The higher the value, more energetic the song
+- **Danceability:** The higher the value, the easier it is to dance to the song
+- **Loudness:** The higher the value, the louder the song
+- **Liveness:** The higher the value, the more likely the song is a live recording
+- **Valence:** The higher the value, the more positive the song
+- **Acousticness:** The higher the value, the more acoustic a song is
+- **Speechiness:** The higher the value, the spoken words in the song
+- **Popularity:** The higher the value, the more popular a song is
+
+## Tidying Data
+
+To make it easier to read, we will be renaming the columns and selecting the attributes that are most important to our analysis:
+
+```{r data_tidying}
+tidy_data <- data %>%
+  magrittr::set_colnames(c("id", "track", "artist", "genre","year", "bpm", "energy", "dance", 
+                           "loudness","liveness", "valance", "duration", "acousticness", 
+                           "speechness", "popularity"))%>%
+  filter(year >= 2010) %>%
+  select(artist, track, genre, year, dance, loudness, speechness, popularity)
+as_tibble(tidy_data)
+```
+
+After tidying the data, we have decided that the attributes we want to focus on our predictions would be track, genre, year, danceability (the higher value, the easier it is to dance), loudness (the higher the value, the louder it is), speechiness (higher value, the more words a song has) and popularity (higher the value, more popular the song) from the years 2010-2019, so we can have a more accurate estimate.
+
+### Tidying Genres
+
+Because our dataset had a total of 96 genres, and some of them have the same genre type like "pop" or "rock", we decided to group all the ones that have similar words to them into one genre so it would be much easier to read the data as well. We ended grouping genres such as "pop", "rock", "hip hop", "soul", "indie", "dance", etc.
+
+```{r genre_tidying}
+tidy_data[,3] <- sapply(tidy_data[,3],as.character)
+
+# Replacing all the pop genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "dutch pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "belgian pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "classic uk pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "barbadian pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "australian pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "indie pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "dance pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "art pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "folk-pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "electropop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "chamber pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "brill building pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "britpop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "acoustic pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "nederpop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "irish pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "canadian pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "danish pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "italian pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "german pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "baroque pop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "austropop", "pop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "la pop", "pop")
+
+# Replacing all the rock genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "alternative rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "belgian rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "album rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "dance rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "modern rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "australian rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "celtic rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "dutch rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "garage rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "blues rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "art rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "irish rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "classic rock", "rock")
+tidy_data$genre = str_replace_all(tidy_data$genre, "glam rock", "rock")
+
+# Replacing all the country genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "contemporary country", "country")
+tidy_data$genre = str_replace_all(tidy_data$genre, "arkansas country", "country")
+
+# Replacing all the soul genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "british soul", "soul")
+tidy_data$genre = str_replace_all(tidy_data$genre, "neo soul", "soul")
+
+# Replacing all the hip hop genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "dutch hip hop", "hip hop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "east coast hip hop", "hip hop")
+tidy_data$genre = str_replace_all(tidy_data$genre, "detroit hip hop", "hip hop")
+
+# Replacing all the indie genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "dutch indie", "indie")
+tidy_data$genre = str_replace_all(tidy_data$genre, "icelandic indie", "indie")
+tidy_data$genre = str_replace_all(tidy_data$genre, "alaska indie", "indie")
+tidy_data$genre = str_replace_all(tidy_data$genre, "alaska indie", "indie")
+
+# Replacing all the dance genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "alternative dance", "dance")
+tidy_data$genre = str_replace_all(tidy_data$genre, "eurodance", "dance")
+tidy_data$genre = str_replace_all(tidy_data$genre, "australian dance", "dance")
+
+# Replacing all the metal genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "finnish metal", "metal")
+tidy_data$genre = str_replace_all(tidy_data$genre, "alternative metal", "metal")
+tidy_data$genre = str_replace_all(tidy_data$genre, "dutch metal", "metal")
+
+# Replacing all the fold genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "australian indie folk", "folk")
+tidy_data$genre = str_replace_all(tidy_data$genre, "canadian folk", "folk")
+tidy_data$genre = str_replace_all(tidy_data$genre, "indie anthem-folk", "folk")
+tidy_data$genre = str_replace_all(tidy_data$genre, "australian indie folk", "folk")
+
+# Replacing all the electro genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "electronica", "electro")
+tidy_data$genre = str_replace_all(tidy_data$genre, "edm", "electro")
+tidy_data$genre = str_replace_all(tidy_data$genre, "electro house", "electro")
+
+# Replacing all the dutch genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "dutch cabaret", "dutch music")
+tidy_data$genre = str_replace_all(tidy_data$genre, "dutch americana", "dutch music")
+tidy_data$genre = str_replace_all(tidy_data$genre, "dutch prog", "dutch music")
+tidy_data$genre = str_replace_all(tidy_data$genre, "dutch americana", "dutch music")
+
+# Replacing all the british genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "british singer-songwriter", "british music")
+tidy_data$genre = str_replace_all(tidy_data$genre, "british invasion", "british music")
+
+# Replacing all the australian genres into one
+tidy_data$genre = str_replace_all(tidy_data$genre, "australian psych", "australian music")
+tidy_data$genre = str_replace_all(tidy_data$genre, "australian americana", "australian music")
+  
+as_tibble(tidy_data)
+```
+
+We get a cleaner dataset where we can visualize the general genre that each sub-genre had for every song which will help us visualize the data in more straightforward way.
+
+### Deleting some Genres
+
+After giving it some thought, we thought it was best to delete some genres that only appear once in the dataset because it can cause outliers as well as skew our data, and we do not want that, so we decided to remove those genres from our data so we can have a more precise calculation for the top songs in 2020.
+
+```{r deleting_genres}
+new_data <- tidy_data[-c(6, 17, 59, 168, 180, 222, 234, 236, 263, 291, 295, 350),]
+as_tibble(new_data)
+```
+
+``` {r genres}
+new_data %>%
+  group_by(genre) %>%
+  summarise()
+```
+
+And finally, we get the dataset with that total of 30 genres that we want to work with to make our predictions.
+
+## Visualizing the Data
+
+We will start by plotting how well every genre has been listened to over the years. The x-axis doesn't display the years because while doing geom_bar, it displays them in scientific notation, so we decided to get rid of it but knowing that the years are increasing.
+
+``` {r genre_years}
+new_data %>%
+  group_by(genre) %>%
+  ggplot(aes(x=year, y=genre, fill=genre)) +
+  geom_bar(stat="identity") +
+  theme(legend.position = "none") +
+  theme(axis.text.x = element_blank()) +
+  labs(title="Genres over the years", x="Year", y="Genres")
+```
+
+From the graph above we can clearly see that the most prominent genre that has been doing really well over the years is pop, followed by rock and indie. This means that over the years, songs within those genres have always been produced every year because it seems that it appeals and is well received by the public.
+
+Next, we would be plotting the popularity among genres.
+
+``` {r genre_popularity}
+new_data %>%
+  group_by(genre) %>%
+  ggplot(aes(x=popularity, y=genre, fill=genre)) +
+  geom_bar(stat = "identity") +
+  theme(legend.position = "none") +
+  labs(title="Popularity vs. Genre", x="Popularity", y="Genres")
+
+```
+
+It is not surprising how pop is the most popular genre for people to listen to. It is the genre that will be played everywhere such as shopping malls, cafeterias, parties and it has a general tone to it that makes people like it and want to listen to it more. Rock is also one of the most popular genres, but you don't see it playing anywhere because it is not as mainstream as pop music. It is the type of music people listen to provide an alternative root of escape from the world. 
+
+Soul and hip-hop are very important genres because the songs address important political and social issues (poverty, racism, violence) that are ignored by the masses, so this genre is mostly to express the social angst of people and for them to be able to know that not everything is being swept under the carpet. 
+
+And finally, there has also been a rise in indie music, because there has been a growth in independent artists throughout the years and people listen to it because there is a powerful vibe to it that feels like the artist is talking to you, something that pop can't do.
+
+Next, we will be plotting the relationship between danceability and every genre.
+
+``` {r genres_dance}
+new_data %>%
+  arrange(desc(dance)) %>%
+  ggplot(aes(x=dance, y=genre, fill=genre)) +
+  geom_bar(stat = "identity") +
+  theme(legend.position = "none") +
+  labs(title="Danceability vs. Genre", x="Danceability", y="Genres")
+
+```
+
+We can clearly notice how pop is the most popular genre amongst the other ones, having a higher danceability rate means that people are more likely to dance to it and thus enjoy it and listen to it more. This is because pop music is most likely to be played more than any genre in public places. 
+
+It is truly a surprise how rock is  one of the genres that have a high danceability rate because we don't see many people dance to it in public places; it is mostly in concerts, but it clear that it does have an impact on people that are able to feel like energy through rock.
+
+## Data Modelling
+
+Now that we have a clear idea about out dataset, we can start building a model that would be useful to predict the top songs for 2020.
+
+### First Model: Linear Regression
+
+The first model we are going to use is linear regression, so we can see if our predictor variables do a good job in predicting the outcome and which attributes are significant predictors for us to use in our analysis.
+
+We will start by plotting the relationship between danceability and popularity and see how well the linear model captures that relationship.
+
+```{r plot_dg}
+new_data %>%
+  group_by(year) %>%
+  ggplot(aes(x=dance, y=popularity)) + 
+  geom_point() + 
+  geom_smooth(method=lm) + 
+  xlab("Danceability") + 
+  ylab("Popularity") + 
+  ggtitle("Popularity vs. Danceability")
+```
+
+```{r linear_modelpd}
+model_popularity <- lm(popularity~dance, data=new_data)
+
+model1 <- broom::tidy(model_popularity) 
+model1
+```
+
+According to this model, on average a song that has no danceability (dance=0) would have a popularity of around 36.5 and on average a song would be more popular for every 0.4 extra danceability it has.
+
+```{r plot_ps}
+new_data %>%
+  group_by(year) %>%
+  ggplot(aes(x=speechness, y=popularity)) + 
+  geom_point() + 
+  geom_smooth(method=lm) + 
+  xlab("Speechiness") + 
+  ylab("Popularity") + 
+  ggtitle("Popularity vs. Speechiness")
+```
+
+```{r linear_modelps}
+model_speech <- lm(popularity~speechness, data=new_data)
+
+model2 <- broom::tidy(model_speech) 
+model2
+```
+
+Now, according to this model we can conclude that when a song has no lyrics, it is, on average 53.1 more popular, which we can clearly see in the graph as everything is right-skewed, where people are most likely to enjoy songs that don't have a lot of words in it.
+
+```{r plot_pl}
+new_data %>%
+  group_by(year) %>%
+  ggplot(aes(x=loudness, y=popularity)) + 
+  geom_point() + 
+  geom_smooth(method=lm) + 
+  xlab("Loudness") + 
+  ylab("Popularity") + 
+  ggtitle("Popularity vs. Loudness")
+```
+
+```{r linear_modelpl}
+model_loudness <- lm(popularity~loudness, data=new_data)
+
+model3 <- broom::tidy(model_loudness) 
+model3
+```
+
+In this model, the relationship between popularity and loudness, is that, on average, a song that is not loud will be 74.9 more popular. Loudness is a measure of intensity which relates to the amplitude of the sound wave. This means that people mostly enjoy listening to songs that are not that loud as we can see if our graph, which is left-skewed, the loudness axis is all negative numbers.
+
+But now, what is the relationship of our regression model if we include the interaction from all the other attributes?
+
+```{r model_interaction}
+model_interaction <- lm(popularity~dance*loudness*speechness, data=new_data)
+
+model4 <- broom::tidy(model_interaction)
+model4
+```
+
+Based on this model, we can see that the parameters are not significantly different from 0, which means that accounting for other attributes such as loudness and speechiness will give us a more precise estimate of our prediction, as well as they can be used to be good predictors. Individually, danceability and loudness have a positive impact in popularity while speechness has a negative impact meaning that for a song to be popular, it has to have a high danceability and loudness while having a lower speech.
+
+### Second Model: Hypotheis Testing
+
+When we initially looked over at the data, we noticed that the popularity and danceability levels seen in the pop genre were off the chart. We will use hypothesis testing to see if the difference between the popularity rates and danceability rates between genres is significantly high in predicting the top genre in 2020.
+
+Our null hypothesis is that the rates of popularity and danceability is statistically significant between genres. Our alternative hypothesis is that the rates of popularity and danceability is higher in pop than any other genre. We will reject the null hypothesis if alpha is less than 0.05 $(\alpha < 0.05)$. 
+
+First, we will gather the data we need:
+
+```{r hypothesis_test, message=FALSE, warning=FALSE}
+our_predictions <- group_by(new_data, genre) %>%
+  mutate(total_popularity = sum(popularity)) %>%
+  mutate(total_danceability = n()) %>%
+  select(total_popularity,total_danceability) %>%
+  distinct()
+our_predictions
+
+```
+
+Then, we will pick the two genres we want to focus on: pop and rock and collect the popularity and danceability statistics in regard to them. 
+
+```{r pt}
+
+# popularity for pop
+pop_popular <- our_predictions$total_popularity[our_predictions$genre=="pop"]
+pop_popular <- as.data.frame(pop_popular)
+names(pop_popular)[1] <- "adding"
+pop_popular[,1] <- sapply(pop_popular[,1],as.integer)
+
+sum_pop_population <- sum(pop_popular$adding,na.rm = TRUE)
+
+# danceabiltiy for pop
+pop_danceability <- our_predictions$total_danceability[our_predictions$genre=="pop"]
+pop_danceability <- as.data.frame(pop_danceability)
+names(pop_danceability)[1] <- "adding"
+sum_pop_danceability <- sum(pop_danceability$adding, na.rm = TRUE)
+
+# popularity rock 
+rock_popular <- our_predictions$total_popularity[our_predictions$genre=="rock"]
+rock_popular <- as.data.frame(rock_popular)
+names(rock_popular)[1] <- "adding"
+sum_rock_popularity <- sum(rock_popular$adding,na.rm = TRUE)
+
+# danceabiltiy for rock
+rock_danceability <- our_predictions$total_danceability[our_predictions$genre=="rock"]
+rock_danceability <- as.data.frame(rock_danceability)
+names(rock_danceability)[1] <- "adding"
+sum_pop_danceability <- sum(rock_danceability$adding, na.rm = TRUE)
+
+```
+
+Now we can find our needed statistics of mean, sd for the two genres. 
+
+```{r stats}
+#POP
+pop_mean <- sum_pop_population / sum_pop_danceability
+pop_std <- pop_popular$adding / pop_danceability$adding
+pop_sum <- sum_pop_population
+
+#ROCK
+rock_mean <- sum_rock_popularity / sum_pop_danceability
+rock_std <- rock_popular$adding / rock_danceability$adding
+rock_sum <- sum_rock_popularity
+
+```
+
+Finally, we are able to calculate our p-value below with the information we have collected:
+
+```{r p_val}
+stat <- (pop_mean-rock_mean)/sqrt(pop_sum+rock_std^2/rock_sum)
+newwdf <- abs(rock_sum-pop_sum-2)
+p <- 1 - pt(abs(stat),newwdf)
+p
+```
+
+After completing all our needed computation, we see that our p-value is 0.2569789 which is greater than 0.05, and since $p>\alpha$, we can thus accept our null hypothesis, which means that pop is actually better than rock where people give pop a higher danceability and popularity rating, making it the most liked genre. Thus, we can conclude that pop is highly more likely to be the more popular and the one to take the charts of 2020.
+
+## Results
+
+Our data analyis was performed on many aspects that can contribute to how well different songs in the different genres do across the world. We saw that the most 'popular' genre that seemed to excel in every aspect and attribute was pop, as it never had any decrease in the number of hits across the years. This comprehensive data analysis allowed us to gain important insight into what songs can potentially make it in 2020 across not only the nation, but the world and it lets us view the relationship between the different attributes in an objective statisfical manner. 
+
+Throughout the linear regressions model, we were able to come to a conclusion that speechiness is an important predictor to determine the top songs. We were able to see, from the graph that the most of the data is centered around less speech to make it more popular. It seems like loudness is a fairly good predictor to determine the top songs, as the less loud (less intensity and sound pressure) the more popular the song is. For danceability, the dataset is mostly centered in the middle where more songs have 50% popularity as well as danceability, so it is not really sure if it would make a good predictor as genres have different sounds that appeal to different people but overall there is a relationship that the more danceable a song is, the more popular it gets and thats why we had to use hypothesis testing.
+
+We see that our hypothesis question was promising because it showed us the relationship between pop and rock and how they affect popularity and danceability. We can say that the higher the danceability rates, the higher the popularity for that specific genre is. We can conclude that the top songs for 2020 will be centered around genres such as pop, rock, indie, and soul with the attributes such that it has a high danceability rate, it doesn't contain a lot lyrics and it is not too loud for the ears.
+
+The entire purpose of this project was to help you investigate the different genres and the different attributes that contribute to the popularity of each genre. We hope that we have achieved our goal and that you have gained insight on the importance of different factors such as loudness, danceability, speech and pitch, and that you can think of how we can further discover why such factors do contribute that much. 
+
+If you would like to learn even more about what makes a genre popular among the people, we recommend taking a look at the following [website](https://www.kaylinpavlik.com/classifying-songs-genres/) which further discusses factors such as musical correlations between features, duration of songs, audio features, energy.
+
+## References
+1. [Understanding + classifying genres](https://www.kaylinpavlik.com/classifying-songs-genres/)
+
+2. [Analyzing your own music](https://towardsdatascience.com/is-my-spotify-music-boring-an-analysis-involving-music-data-and-machine-learning-47550ae931de)
+
+3. [Song Popularity Predictor](https://towardsdatascience.com/song-popularity-predictor-1ef69735e380)
